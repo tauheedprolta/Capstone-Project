@@ -1,0 +1,114 @@
+import tkinter as tk
+import tkinter.ttk as ttk
+import datetime
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+
+class Appointment:
+    def __init__(self, doctor, patient, date):
+        self.doctor = doctor
+        self.patient = patient
+        self.date = date
+
+class Doctor:
+    def __init__(self, name, specialty):
+        self.name = name
+        self.specialty = specialty
+        self.appointments = []
+
+    def schedule_appointment(self, patient, date):
+        appointment = Appointment(self, patient, date)
+        self.appointments.append(appointment)
+        return appointment
+
+class Patient:
+    def __init__(self, name, age, symptoms):
+        self.name = name
+        self.age = age
+        self.symptoms = symptoms
+
+def book_appointment():
+    name = name_entry.get()
+    age = age_entry.get()
+    selected_symptoms = [symptoms_listbox.get(idx) for idx in symptoms_listbox.curselection()]
+    date_str = date_entry.get()
+    time_str = time_entry.get()
+    date = datetime.datetime.strptime(date_str + " " + time_str, "%Y-%m-%d %H:%M")
+
+    # Use a decision tree classifier to recommend a doctor based on the patient's symptoms
+    symptom_values = {"Back pain": [0, 1], "Knee pain": [0, 1], "Chest pain": [0, 1], "Irregular periods": [0, 1], "Pelvic pain": [0, 1]}
+    X = np.zeros((1, len(symptom_values)*2))
+    for i, symptom in enumerate(selected_symptoms):
+        if symptom in symptom_values:
+            values = symptom_values[symptom]
+            for j, value in enumerate(values):
+                X[0][i*len(values) + j] = value
+
+    y = np.array(["Orthopedic"]*len(selected_symptoms))
+    doctor_classifier = DecisionTreeClassifier(random_state=0)
+    doctor_classifier.fit(X, y)
+
+    # Predict the doctor's specialty based on the patient's symptoms
+    predicted_specialty = doctor_classifier.predict(X)[0]
+
+    # Create the doctor and patient objects and schedule the appointment
+    if predicted_specialty == "Orthopedic":
+        doctor = Doctor("John Doe", "Orthopedic")
+    elif predicted_specialty == "Cardiologist":
+        doctor = Doctor("Jane Smith", "Cardiologist")
+    else:
+        doctor = Doctor("Emily Jones", "Gynecologist")
+
+    patient = Patient(name, age, selected_symptoms)
+    appointment = doctor.schedule_appointment(patient, date)
+
+    # Display a popup message when the appointment is booked
+    message = "Appointment booked with Dr. {} ({}) on {}".format(doctor.name, doctor.specialty, date)
+    popup_window = tk.Toplevel(root)
+    popup_window.title("Appointment Booked")
+    popup_label = tk.Label(popup_window, text=message)
+    popup_label.pack(padx=20, pady=20)
+
+
+# Define the possible symptoms
+SYMPTOMS = ["Back pain", "Knee pain", "Chest pain", "Irregular periods", "Pelvic pain"]
+
+# Create the GUI
+root = tk.Tk()
+root.title("Book Appointment")
+
+# Create the input fields
+name_label = tk.Label(root, text="Name:")
+name_label.grid(row=0, column=0, sticky="W")
+name_entry = tk.Entry(root)
+name_entry.grid(row=0, column=1)
+
+age_label = tk.Label(root, text="Age:")
+age_label.grid(row=1, column=0, sticky="W")
+age_entry = tk.Entry(root)
+age_entry.grid(row=1, column=1)
+
+symptoms_label = tk.Label(root, text="Symptoms:")
+symptoms_label.grid(row=2, column=0, sticky="W")
+
+symptoms_listbox = tk.Listbox(root, selectmode="multiple")
+for symptom in SYMPTOMS:
+    symptoms_listbox.insert(tk.END, symptom)
+    symptoms_listbox.grid(row=2, column=1)
+
+date_label = tk.Label(root, text="Date:")
+date_label.grid(row=3, column=0, sticky="W")
+date_entry = tk.Entry(root)
+date_entry.grid(row=3, column=1)
+
+time_label = tk.Label(root, text="Time:")
+time_label.grid(row=4, column=0, sticky="W")
+time_entry = tk.Entry(root)
+time_entry.grid(row=4, column=1)
+
+#Create the book appointment button
+book_button = ttk.Button(root, text="Book Appointment", command=book_appointment)
+book_button.grid(row=5, column=1)
+
+#Run the GUI loop
+root.mainloop()
